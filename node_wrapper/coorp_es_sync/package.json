@@ -1,0 +1,5 @@
+{
+  "name": "coorp_es_sync",
+  "description": "Wrapper arround C++ app synchronising a mongodb to an elasticsearch",
+  "version": "0.1.3"
+}
