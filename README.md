@@ -13,7 +13,8 @@ Compiling
 
 ### Building
 In both cases, boost and mongo are static builds. Libcurl is built statically on linux only. It comes with a huge list of dependencies, so its built with the bare minimum requirements :
-    
+
+    ./configure --disable-shared --enable-static --without-gnutls --without-polarssl --without-cyassl --without-nss --without-axtls --without-libmetalink --without-libssh2 --without-librtmp --without-librtmp --without-libidn --without-nghttp2 --disable-ldap --disable-ldaps --disable-rtsp --disable-proxy --disable-dict --disable-telnet --disable-tftp --disable-pop3 --disable-imap --disable-smtp --disable-gopher --disable-sspi --disable-crypto-auth --disable-ntlm-wb --disable-tls-srp --without-zlib --disable-ftp
 
 #### Linux (full static build)
     g++ -o coorp_es_sync_linux_x64 coorp_es_sync.cpp -Wno-write-strings <include path list> <libraries search list> -static-libgcc -lmongoclient -lboost_thread-mt-sd -lboost_program_options-mt-sd -lboost_filesystem-mt-sd -lboost_system-mt-sd -lboost_regex-mt-sd libcurl.a -Wl,-static -lssl -lcrypto -lpthread -lz -ldl -lrt
