@@ -21,6 +21,7 @@ Then strip the binary if necessary to reduce its size.
 
 #### Mac OS
 The mac os build only requires a partial static build, and relies on system libraries to be dynamically linked (curl, openssl, ...)
+
     clang++ -mmacosx-version-min=10.6 -o coorp_es_sync_darwin_x64 coorp_es_sync.cpp -Wno-write-strings <include path list> <libraries search list> -lmongoclient -lboost_thread-mt-s -lboost_program_options-mt-s -lboost_filesystem-mt-s -lboost_system-mt-s -lboost_regex-mt-sd -lcurl
 
 Node.js wrapper usage
@@ -28,6 +29,7 @@ Node.js wrapper usage
 
 The wrapper exports 2 functions, sync_full and sync_incremental.
 Sample usage :
+
     require('coorp-es-sync').sync_full(function(error, stdout, stderr) {
         console.log(stdout);
         if (error == null)
