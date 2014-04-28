@@ -63,6 +63,7 @@
 			<field>modules.timesCompleted</field>
 		</achievements>
 		<battles>
+			<field>status</field>
 			<field>discipline</field>
 		</battles>
 		<forums>
