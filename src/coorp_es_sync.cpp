@@ -77,7 +77,7 @@ std::string format_date(const boost::smatch &match)
 	struct tm td;
 	bdate.toTm(&td);
 	char timebuff[32];
-	strftime(timebuff, 32, "\"%Y/%m/%d %H:%M:%S\"", &td);
+	strftime(timebuff, 32, "\"%Y-%m-%dT%H:%M:%S+00:00\"", &td);
 	return timebuff;
 }
 
