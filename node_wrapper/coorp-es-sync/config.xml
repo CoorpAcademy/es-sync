@@ -63,12 +63,18 @@
 			<field>modules.timesCompleted</field>
 		</achievements>
 		<battles>
-			<field>status</field>
+			<update_field>meta.updatedAt</update_field>
+			<field>meta.updatedAt</field>
 			<field>discipline</field>
+			<field>status</field>
 		</battles>
 		<forums>
+			<update_field>meta.updatedAt</update_field>
+			<field>meta.updatedAt</field>
 		</forums>
 		<hypercomments>
+			<update_field>meta.updatedAt</update_field>
+			<field>meta.updatedAt</field>
 		</hypercomments>
 	</collections>
 </sync>
