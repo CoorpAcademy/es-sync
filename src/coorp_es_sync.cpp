@@ -71,7 +71,7 @@ std::string format_date(const boost::smatch &match)
 {
 	// Mongo's Date is a millisecond since epoch timestamp. To avoid having to
 	// define date mappings in ES for every date field, we convert it to
-	// the ES's default datetime format (YYYY/MM/DD HH:MM:SS) so it will
+	// the ES's default datetime format (YYYY/MM/DDTHH:MM:SS+00:00) so it will
 	// dynamically map it to a date field.
 	Date_t bdate(boost::lexical_cast<unsigned long long>(match[1].str()));
 	struct tm td;
@@ -165,14 +165,14 @@ boost::property_tree::ptree get_documents(boost::property_tree::ptree &config, s
 	return documents;
 }
 
-void post_updates(boost::property_tree::ptree &config, std::string &queries)
+void post_updates(boost::property_tree::ptree &config, std::string &queries, const char *uri = "/_bulk")
 {
 	// Post our JSON request to ES. Here we just handle HTTP(S) stuff.
 	log(ll::DEBUG, "\t\tPosting %u bytes of data", queries.size());
 	CURL *curl = curl_easy_init();
 	if (curl)
 	{
-		prepare_es_connection(config, curl, "/_bulk");
+		prepare_es_connection(config, curl, uri);
 		curl_easy_setopt(curl, CURLOPT_POST, 1L);
 		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, queries.c_str());
 
@@ -205,14 +205,43 @@ void set_read_pref(boost::property_tree::ptree config, Query &q)
 void process_sync(boost::property_tree::ptree &config, boost::property_tree::ptree::iterator config_instance,
 		DBClientConnection &c, std::string synctype)
 {
+	boost::property_tree::ptree collections = config.get_child("sync.collections");
+
 	// First, check if the index exists and create it if necessary.
 	boost::property_tree::ptree stats = get_documents(config, "/_stats", "");
 	if (!stats.count("indices") || !stats.get_child("indices").count(config_instance->first))
 	{
 		log(ll::INFO, "\tCreatindex index %s", config_instance->first.c_str());
-		std::string dummy;
-		dummy += "{ \"delete\" : { \"_index\" : \"" + config_instance->first + "\", \"_type\" : \"dummy\", \"_id\" : \"42\" } }\n";
-		post_updates(config, dummy);
+		std::string mapping, uri;
+
+		// ES cannot auto map nested fields, so we need to explicitly map them at index creation
+		for (boost::property_tree::ptree::iterator col_it = collections.begin(); col_it != collections.end(); col_it++)
+		{
+			bool col_has_nested = false;
+			bool first = true;
+			for (boost::property_tree::ptree::iterator fields_it = col_it->second.begin(); fields_it != col_it->second.end(); fields_it++)
+			{
+				if (fields_it->first == "nested_field")
+				{
+					if (first && !mapping.empty())
+						mapping += "} },\n";
+					log(ll::DEBUG, "\t\tAdding nested field %s to mapping", fields_it->second.data().c_str());
+					if (mapping.empty())
+						mapping += "{ mappings : { \n";
+					if (!col_has_nested)
+						mapping += "\"" + col_it->first + "\" : { properties: { \n";
+					if (!first)
+						mapping += ", ";
+					mapping += "\"" + fields_it->second.data() + "\" : { type: \"nested\" }\n";
+					col_has_nested = true;
+					first = false;
+				}
+			}
+		}
+		if (!mapping.empty()) mapping += "} } } }";
+
+		uri += "/" + config_instance->first;
+		post_updates(config, mapping, uri.c_str());
 	}
 
 	// Mongo's BSONObj json string is almost what we need to feed ES, but we need to rewrite
@@ -221,7 +250,6 @@ void process_sync(boost::property_tree::ptree &config, boost::property_tree::ptr
 	boost::regex re_date("\\{ \"\\$date\" : ([0-9]+) \\}");
 	// When the query's size reached this point, it will trigger data's POST
 	int size_trigger = config.get<int>("sync.config.message_size_bulk_trigger", 1000000000);
-	boost::property_tree::ptree collections = config.get_child("sync.collections");
 	std::string query_buffer;
 	query_buffer.reserve(size_trigger * 2);
 	// Some accouting
