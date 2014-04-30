@@ -306,6 +306,7 @@ void process_sync(boost::property_tree::ptree &config, boost::property_tree::ptr
 		if (synctype == "full")
 		{
 			// Now proceed with removal
+			delcount = 0;
 			// First, get all doc ids on the Mongo side and fill the hash map
 			std::tr1::unordered_set<std::string> mongoids;
 			q = BSONObj();
@@ -321,6 +322,7 @@ void process_sync(boost::property_tree::ptree &config, boost::property_tree::ptr
 			int fetch_size = config.get<int>("sync.config.fetch_size", 10000);
 			unsigned long from = 0;
 			unsigned int returned = 0;
+			// Then, fetch doc ids on Es side
 			do {
 				query.clear();
 				query += "{ \"fields\": [], \"size\": " + boost::lexical_cast<std::string>(fetch_size) +
@@ -330,6 +332,7 @@ void process_sync(boost::property_tree::ptree &config, boost::property_tree::ptr
 				returned = 0;
 				for (boost::property_tree::ptree::iterator esdoc_it = esdocs.begin(); esdoc_it != esdocs.end(); esdoc_it++)
 				{
+					// If found in ES, but not in mongo, add to delete list
 					if (mongoids.find(esdoc_it->second.get<std::string>("_id")) == mongoids.end())
 					{
 						query_buffer += "{ \"delete\": { \"_index\": \"" + config_instance->first + "\", \"_type\": \"" +

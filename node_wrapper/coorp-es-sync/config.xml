@@ -58,6 +58,7 @@
 			<nested_field>modules</nested_field>
 			<field>discipline_id</field>
 			<field>user_id</field>
+			<field>meta.updatedAt</field>
 			<field>modules._id</field>
 			<field>modules.hasRequestAShot</field>
 			<field>modules.state</field>
