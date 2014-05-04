@@ -53,17 +53,25 @@
 			<field>modules.name</field>
 			<field>modules.chapters</field>
 		</disciplines>
+		<slides>
+			<update_field>meta.updatedAt</update_field>
+			<field>lessons.videoViews</field>
+			<field>lessons.videoViewsInLesson</field>
+			<field>lessons.videoViewsFromList</field>
+		</slides>
 		<achievements>
 			<update_field>meta.updatedAt</update_field>
 			<nested_field>modules</nested_field>
 			<field>discipline_id</field>
 			<field>user_id</field>
+			<field>user.displayName</field>
 			<field>meta.updatedAt</field>
 			<field>modules._id</field>
 			<field>modules.hasRequestAShot</field>
 			<field>modules.state</field>
 			<field>modules.status</field>
 			<field>modules.timesCompleted</field>
+			<field>modules.timesFailed</field>
 		</achievements>
 		<battles>
 			<update_field>meta.updatedAt</update_field>
@@ -79,5 +87,9 @@
 			<update_field>meta.updatedAt</update_field>
 			<field>meta.updatedAt</field>
 		</hypercomments>
+		<connection_logs>
+			<update_field>datetime</update_field>
+			<field>datetime</field>
+		</connection_logs>
 	</collections>
 </sync>
