@@ -52,12 +52,12 @@
 			<field>modules.level</field>
 			<field>modules.name</field>
 			<field>modules.chapters</field>
+			<field>modules.stats</field>
 		</disciplines>
 		<slides>
 			<update_field>meta.updatedAt</update_field>
-			<field>lessons.videoViews</field>
-			<field>lessons.videoViewsInLesson</field>
-			<field>lessons.videoViewsFromList</field>
+			<field>chapter_id</field>
+			<field>lessons</field>
 		</slides>
 		<achievements>
 			<update_field>meta.updatedAt</update_field>
