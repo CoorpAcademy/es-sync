@@ -1,0 +1,88 @@
+<sync>
+	<config>
+		<!-- Minimum message size before triggering bulk query, in bytes -->
+		<message_size_bulk_trigger>5000000</message_size_bulk_trigger>
+		<!-- Time period for incremental updates, in seconds -->
+		<incremental_offset>3600</incremental_offset>
+		<!-- Full url to ES server, no trailing slash -->
+		<esurl>${es_url}</esurl>
+		<esuser>${es_user}</esuser>
+		<espwd>${es_password}</espwd>
+		<!-- Should we validate SSL cert ? -->
+		<validate_certificate>false</validate_certificate>
+		<!-- How many docs do we fetch at a time from ES ? -->
+		<fetch_size>100000</fetch_size>
+		<logfile></logfile>
+		<!-- 0 = DEBUG, 1 = INFO, 2 = WARNING, 3 = ERROR -->
+		<loglevel>${log_level}</loglevel>
+	</config>
+	<!-- A list of instances (customers). The list
+		 key is used as the ES index name -->
+	<instances>
+		<${es_index_name}>
+			<dbhost>${mongo_db_host}</dbhost>
+			<dbname>${mongo_db_name}</dbname>
+			<dbuser>${mongo_db_user}</dbuser>
+			<dbpwd>${mongo_db_password}</dbpwd>
+			<dbreadpref>${mongo_db_read_pref}</dbreadpref>
+		</${es_index_name}>
+	</instances>
+	<!-- A list of collections and fields to sync.
+	     The key is the collection's name.
+	     For incremental update, update_field is used
+	     as a date reference to filter updated documents -->
+	<collections>
+		<users>
+			<field>displayName</field>
+			<field>stats.lastConnection</field>
+			<field>coachDisciplines</field>
+		</users>
+		<disciplines>
+			<update_field>meta.updatedAt</update_field>
+			<nested_field>modules</nested_field>
+			<field>name</field>
+			<field>modules._id</field>
+			<field>modules.level</field>
+			<field>modules.name</field>
+			<field>modules.chapters</field>
+			<field>modules.stats</field>
+		</disciplines>
+		<slides>
+			<update_field>meta.updatedAt</update_field>
+			<field>chapter_id</field>
+			<field>lessons</field>
+		</slides>
+		<achievements>
+			<update_field>meta.updatedAt</update_field>
+			<nested_field>modules</nested_field>
+			<field>discipline_id</field>
+			<field>user_id</field>
+			<field>user.displayName</field>
+			<field>meta.updatedAt</field>
+			<field>modules._id</field>
+			<field>modules.hasRequestAShot</field>
+			<field>modules.state</field>
+			<field>modules.status</field>
+			<field>modules.timesCompleted</field>
+			<field>modules.timesFailed</field>
+		</achievements>
+		<battles>
+			<update_field>meta.updatedAt</update_field>
+			<field>meta.updatedAt</field>
+			<field>discipline</field>
+			<field>status</field>
+		</battles>
+		<forums>
+			<update_field>meta.updatedAt</update_field>
+			<field>meta.updatedAt</field>
+		</forums>
+		<hypercomments>
+			<update_field>meta.updatedAt</update_field>
+			<field>meta.updatedAt</field>
+		</hypercomments>
+		<connection_logs>
+			<update_field>datetime</update_field>
+			<field>datetime</field>
+		</connection_logs>
+	</collections>
+</sync>
