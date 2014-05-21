@@ -20,11 +20,11 @@
 		 key is used as the ES index name -->
 	<instances>
 		<${es_index_name}>
-			<dbhost>${mongo_db_host}</dbhost>
-			<dbname>${mongo_db_name}</dbname>
-			<dbuser>${mongo_db_user}</dbuser>
-			<dbpwd>${mongo_db_password}</dbpwd>
-			<dbreadpref>${mongo_db_read_pref}</dbreadpref>
+			<dbhost>${mongodb_host}</dbhost>
+			<dbname>${mongodb_db_name}</dbname>
+			<dbuser>${mongodb_user}</dbuser>
+			<dbpwd>${mongodb_password}</dbpwd>
+			<dbreadpref>${mongodb_read_pref}</dbreadpref>
 		</${es_index_name}>
 	</instances>
 	<!-- A list of collections and fields to sync.

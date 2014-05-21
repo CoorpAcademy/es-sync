@@ -7,7 +7,10 @@
 
 IFS='' # preserve whitespaces for read line
 
-cat config.sample.xml |
+CURRENT_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+TEMPLATE_PATH="$CURRENT_PATH/config.sample.xml"
+
+cat $TEMPLATE_PATH |
 while read line ; do
     while [[ "$line" =~ (\$\{[a-z_]+\}) ]] ; do
         LHS=${BASH_REMATCH[1]}
