@@ -49,8 +49,11 @@
 		</disciplines>
 		<slides>
 			<update_field>meta.updatedAt</update_field>
+			<nested_field>lessons</nested_field>
 			<field>chapter_id</field>
-			<field>lessons</field>
+			<field>lessons.description</field>
+			<field>lessons.type</field>
+			<field>lessons.views</field>
 		</slides>
 		<achievements>
 			<update_field>meta.updatedAt</update_field>

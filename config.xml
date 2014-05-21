@@ -75,9 +75,11 @@
 		</achievements>
 		<battles>
 			<update_field>meta.updatedAt</update_field>
-			<field>meta.updatedAt</field>
-			<field>discipline</field>
-			<field>status</field>
+			<nested_field>lessons</nested_field>
+			<field>chapter_id</field>
+			<field>lessons.description</field>
+			<field>lessons.type</field>
+			<field>lessons.views</field>
 		</battles>
 		<forums>
 			<update_field>meta.updatedAt</update_field>
