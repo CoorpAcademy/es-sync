@@ -423,12 +423,13 @@ int main(int argc, char **argv)
 				retcode = 1;
 				goto cleanup;
 			}
-			if (!c.auth(it->second.get<std::string>("dbname"), it->second.get<std::string>("dbuser"), it->second.get<std::string>("dbpwd"), err))
-			{
-				log(ll::ERROR, "Cannot auth with mongo server : %s", err.c_str());
-				retcode = 1;
-				goto cleanup;
-			}
+			if (!it->second.get<std::string>("dbuser").empty() && !it->second.get<std::string>("dbpwd").empty())
+				if (!c.auth(it->second.get<std::string>("dbname"), it->second.get<std::string>("dbuser"), it->second.get<std::string>("dbpwd"), err))
+				{
+					log(ll::ERROR, "Cannot auth with mongo server : %s", err.c_str());
+					retcode = 1;
+					goto cleanup;
+				}
 			process_sync(config, it, c, synctype);
 		}
 	}catch(std::exception &e){
