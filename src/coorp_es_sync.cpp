@@ -291,6 +291,8 @@ void process_sync(boost::property_tree::ptree &config, po::variables_map &vm, bo
 		// If specified in config, set a read preference on our query
 		set_read_pref(config_instance->second, vm, q);
 		auto_ptr<DBClientCursor> res = c.query(nscol, q, 0, 0, &obj);
+		if (!c.getLastError().empty())
+			throw std::runtime_error(c.getLastError());
 		int coldoccount = 0;
 		while (res->more())
 		{
@@ -316,6 +318,8 @@ void process_sync(boost::property_tree::ptree &config, po::variables_map &vm, bo
 			set_read_pref(config_instance->second, vm, q);
 			BSONObj resfields = BSON("_id" << 1);
 			std::auto_ptr<DBClientCursor> res = c.query(nscol, q, 0, 0, &resfields);
+			if (!c.getLastError().empty())
+				throw std::runtime_error(c.getLastError());
 			while (res->more())
 				mongoids.insert(res->next().getField("_id").OID().toString());
 			log(ll::DEBUG, "\t\tFetched %u mongo docs", mongoids.size());
