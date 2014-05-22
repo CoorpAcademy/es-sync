@@ -20,11 +20,11 @@ namespace ll {
 FILE *logfd = NULL;
 int loglevel;
 
-#define POST_UPDATES do {									\
-						 post_updates(config, query_buffer);\
-						 sndbytes += query_buffer.size();	\
-						 query_buffer.clear();				\
-						 msgcount++;						\
+#define POST_UPDATES do {                                        \
+						 post_updates(config, vm, query_buffer); \
+						 sndbytes += query_buffer.size();        \
+						 query_buffer.clear();                   \
+						 msgcount++;                             \
 					 } while(0);
 
 
@@ -88,9 +88,10 @@ size_t post_callback(char *ptr, size_t size, size_t nmemb, void *userdata)
 	return size * nmemb;
 }
 
-void prepare_es_connection(boost::property_tree::ptree &config, CURL *curl, const char *uri)
+void prepare_es_connection(boost::property_tree::ptree &config, po::variables_map &vm, CURL *curl, const char *uri)
 {
-	curl_easy_setopt(curl, CURLOPT_URL, config.get<std::string>("sync.config.esurl").append(uri).c_str());
+	std::string esurl = vm.count("esurl")?vm["esurl"].as<std::string>():config.get<std::string>("sync.config.esurl");
+	curl_easy_setopt(curl, CURLOPT_URL, esurl.append(uri).c_str());
 	if (config.get<bool>("sync.config.validate_certificate", false))
 	{
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
@@ -99,8 +100,8 @@ void prepare_es_connection(boost::property_tree::ptree &config, CURL *curl, cons
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
 	}
-	std::string user = config.get<std::string>("sync.config.esuser", "");
-	std::string pwd = config.get<std::string>("sync.config.espwd", "");
+	std::string user = vm.count("esuser")?vm["esuser"].as<std::string>():config.get<std::string>("sync.config.esuser", "");
+	std::string pwd = vm.count("espwd")?vm["espwd"].as<std::string>():config.get<std::string>("sync.config.espwd", "");
 	if (!user.empty() && !pwd.empty())
 	{
 		curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
@@ -142,14 +143,14 @@ bool process_es_response(CURL *curl, boost::property_tree::ptree *response_body 
 	return true;
 }
 
-boost::property_tree::ptree get_documents(boost::property_tree::ptree &config, std::string uri, std::string query)
+boost::property_tree::ptree get_documents(boost::property_tree::ptree &config, po::variables_map &vm, std::string uri, std::string query)
 {
 	boost::property_tree::ptree documents;
 	// Send a GET request to ES, retrieve result as a property tree
 	CURL *curl = curl_easy_init();
 	if (curl)
 	{
-		prepare_es_connection(config, curl, uri.c_str());
+		prepare_es_connection(config, vm, curl, uri.c_str());
 		// Including a body in a get request is not a standard behavior
 		curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "GET");
 		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, query.c_str());
@@ -165,14 +166,14 @@ boost::property_tree::ptree get_documents(boost::property_tree::ptree &config, s
 	return documents;
 }
 
-void post_updates(boost::property_tree::ptree &config, std::string &queries, const char *uri = "/_bulk")
+void post_updates(boost::property_tree::ptree &config, po::variables_map &vm, std::string &queries, const char *uri = "/_bulk")
 {
 	// Post our JSON request to ES. Here we just handle HTTP(S) stuff.
 	log(ll::DEBUG, "\t\tPosting %u bytes of data", queries.size());
 	CURL *curl = curl_easy_init();
 	if (curl)
 	{
-		prepare_es_connection(config, curl, uri);
+		prepare_es_connection(config, vm, curl, uri);
 		curl_easy_setopt(curl, CURLOPT_POST, 1L);
 		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, queries.c_str());
 
@@ -186,32 +187,33 @@ void post_updates(boost::property_tree::ptree &config, std::string &queries, con
 	}
 }
 
-void set_read_pref(boost::property_tree::ptree config, Query &q)
+void set_read_pref(boost::property_tree::ptree &config, po::variables_map &vm, Query &q)
 {
 	std::string pref;
 	try {
-		pref = config.get<std::string>("dbreadpref");
+		pref = vm.count("dbreadpref")?vm["dbreadpref"].as<std::string>():config.get<std::string>("dbreadpref");
 	}catch(std::exception){
 		return;
 	}
 	if (pref == "primary")
 		q.readPref(mongo::ReadPreference_PrimaryPreferred, mongo::BSONArray());
-	if (pref == "secondary")
+	else if (pref == "secondary")
 		q.readPref(mongo::ReadPreference_SecondaryPreferred, mongo::BSONArray());
-	if (pref == "nearest")
+	else if (pref == "nearest")
 		q.readPref(mongo::ReadPreference_Nearest, mongo::BSONArray());
 }
 
-void process_sync(boost::property_tree::ptree &config, boost::property_tree::ptree::iterator config_instance,
+void process_sync(boost::property_tree::ptree &config, po::variables_map &vm, boost::property_tree::ptree::iterator config_instance,
 		DBClientConnection &c, std::string synctype)
 {
+	std::string esindex = vm.count("esindex")?vm["esindex"].as<std::string>():config_instance->first;
 	boost::property_tree::ptree collections = config.get_child("sync.collections");
 
 	// First, check if the index exists and create it if necessary.
-	boost::property_tree::ptree stats = get_documents(config, "/_stats", "");
-	if (!stats.count("indices") || !stats.get_child("indices").count(config_instance->first))
+	boost::property_tree::ptree stats = get_documents(config, vm, "/_stats", "");
+	if (!stats.count("indices") || !stats.get_child("indices").count(esindex))
 	{
-		log(ll::INFO, "\tCreatindex index %s", config_instance->first.c_str());
+		log(ll::INFO, "\tCreatindex index %s", esindex.c_str());
 		std::string mapping, uri;
 
 		// ES cannot auto map nested fields, so we need to explicitly map them at index creation
@@ -240,8 +242,8 @@ void process_sync(boost::property_tree::ptree &config, boost::property_tree::ptr
 		}
 		if (!mapping.empty()) mapping += "} } } }";
 
-		uri += "/" + config_instance->first;
-		post_updates(config, mapping, uri.c_str());
+		uri += "/" + esindex;
+		post_updates(config, vm, mapping, uri.c_str());
 	}
 
 	// Mongo's BSONObj json string is almost what we need to feed ES, but we need to rewrite
@@ -261,7 +263,8 @@ void process_sync(boost::property_tree::ptree &config, boost::property_tree::ptr
 	for (boost::property_tree::ptree::iterator col_it = collections.begin(); col_it != collections.end(); col_it++)
 	{
 		log(ll::INFO, "\tSyncing collection %s", col_it->first.c_str());
-		std::string nscol = config_instance->second.get<std::string>("dbname") + "." + col_it->first;
+		std::string nscol = (vm.count("dbname")?vm["dbname"].as<std::string>():config_instance->second.get<std::string>("dbname")) +
+			"." + col_it->first;
 		// Just get the requested fields
 		BSONObjBuilder ob;
 		for (boost::property_tree::ptree::iterator fields_it = col_it->second.begin(); fields_it != col_it->second.end(); fields_it++)
@@ -286,14 +289,14 @@ void process_sync(boost::property_tree::ptree &config, boost::property_tree::ptr
 			}
 		}
 		// If specified in config, set a read preference on our query
-		set_read_pref(config_instance->second, q);
+		set_read_pref(config_instance->second, vm, q);
 		auto_ptr<DBClientCursor> res = c.query(nscol, q, 0, 0, &obj);
 		int coldoccount = 0;
 		while (res->more())
 		{
 			BSONObj doc = res->next();
 			// Bulk operation for our document, just "index" (eg. upsert)
-			query_buffer += "{ \"index\": { \"_index\": \"" + config_instance->first + "\", \"_type\": \"" +
+			query_buffer += "{ \"index\": { \"_index\": \"" + esindex + "\", \"_type\": \"" +
 					col_it->first + "\", \"_id\": \"" + doc["_id"].OID().toString() + "\", \"_retry_on_conflict\" : 3} }\n";
 			// Export document to JSON string and perform our rewriting
 			query_buffer += boost::regex_replace(boost::regex_replace(doc.jsonString(), re_objectid, "\\1"), re_date, format_date) + "\n";
@@ -310,7 +313,7 @@ void process_sync(boost::property_tree::ptree &config, boost::property_tree::ptr
 			// First, get all doc ids on the Mongo side and fill the hash map
 			std::tr1::unordered_set<std::string> mongoids;
 			q = BSONObj();
-			set_read_pref(config_instance->second, q);
+			set_read_pref(config_instance->second, vm, q);
 			BSONObj resfields = BSON("_id" << 1);
 			std::auto_ptr<DBClientCursor> res = c.query(nscol, q, 0, 0, &resfields);
 			while (res->more())
@@ -318,7 +321,7 @@ void process_sync(boost::property_tree::ptree &config, boost::property_tree::ptr
 			log(ll::DEBUG, "\t\tFetched %u mongo docs", mongoids.size());
 
 			std::string uri, query;
-			uri += "/" + config_instance->first + "/" + col_it->first + "/_search";
+			uri += "/" + esindex + "/" + col_it->first + "/_search";
 			int fetch_size = config.get<int>("sync.config.fetch_size", 10000);
 			unsigned long from = 0;
 			unsigned int returned = 0;
@@ -327,7 +330,7 @@ void process_sync(boost::property_tree::ptree &config, boost::property_tree::ptr
 				query.clear();
 				query += "{ \"fields\": [], \"size\": " + boost::lexical_cast<std::string>(fetch_size) +
 						", \"from\": " + boost::lexical_cast<std::string>(from) + " }";
-				boost::property_tree::ptree fetch_result = get_documents(config, uri, query);
+				boost::property_tree::ptree fetch_result = get_documents(config, vm, uri, query);
 				boost::property_tree::ptree esdocs = fetch_result.get_child("hits.hits");
 				returned = 0;
 				for (boost::property_tree::ptree::iterator esdoc_it = esdocs.begin(); esdoc_it != esdocs.end(); esdoc_it++)
@@ -335,7 +338,7 @@ void process_sync(boost::property_tree::ptree &config, boost::property_tree::ptr
 					// If found in ES, but not in mongo, add to delete list
 					if (mongoids.find(esdoc_it->second.get<std::string>("_id")) == mongoids.end())
 					{
-						query_buffer += "{ \"delete\": { \"_index\": \"" + config_instance->first + "\", \"_type\": \"" +
+						query_buffer += "{ \"delete\": { \"_index\": \"" + esindex + "\", \"_type\": \"" +
 								col_it->first + "\", \"_id\": \"" + esdoc_it->second.get<std::string>("_id") + "\" } }\n";
 						if (query_buffer.size() >= size_trigger)
 							POST_UPDATES;
@@ -366,6 +369,16 @@ int main(int argc, char **argv)
 				("help", "gimme some hints")
 				("conf", po::value<std::string>()->default_value("config.xml"), "xml config file")
 				("type", po::value<std::string>(), "sync type: incremental or full")
+				("esurl", po::value<std::string>(), "override config: elastic search url (eg. https://...)")
+				("esuser", po::value<std::string>(), "override config: elastic search username")
+				("espwd", po::value<std::string>(), "override config: elastic search password")
+				("esindex", po::value<std::string>(), "override config: elastic search index")
+				("loglevel", po::value<int>(), "override config: log level")
+				("dbhost", po::value<std::string>(), "override config: database host")
+				("dbname", po::value<std::string>(), "override config: database name")
+				("dbuser", po::value<std::string>(), "override config: database username")
+				("dbpwd", po::value<std::string>(), "override config: database password")
+				("dbreadpref", po::value<std::string>(), "override config: database readpref")
 				;
 		po::variables_map vm;
 		try {
@@ -403,7 +416,7 @@ int main(int argc, char **argv)
 			goto cleanup;
 		}
 
-		loglevel = config.get<int>("sync.config.loglevel", 1);
+		loglevel = vm.count("loglevel")?vm["loglevel"].as<int>():config.get<int>("sync.config.loglevel", 1);
 		if (boost::filesystem::is_regular(config.get<std::string>("sync.config.logfile", "")))
 			logfd = fopen(config.get<std::string>("sync.config.logfile").c_str(), "a");
 
@@ -415,22 +428,24 @@ int main(int argc, char **argv)
 		boost::property_tree::ptree instances = config.get_child("sync.instances");
 		for (boost::property_tree::ptree::iterator it = instances.begin(); it != instances.end(); it++)
 		{
-			log(ll::INFO, "Processing instance %s", it->first.c_str());
+			log(ll::INFO, "Processing instance %s", vm.count("esindex")?vm["esindex"].as<std::string>().c_str():it->first.c_str());
 			std::string err;
-			if (!c.connect(it->second.get<std::string>("dbhost"), err))
+			if (!c.connect(vm.count("dbhost")?vm["dbhost"].as<std::string>():it->second.get<std::string>("dbhost"), err))
 			{
 				log(ll::ERROR, "Could not connect to db : %s", err.c_str());
 				retcode = 1;
 				goto cleanup;
 			}
-			if (!it->second.get<std::string>("dbuser").empty() && !it->second.get<std::string>("dbpwd").empty())
-				if (!c.auth(it->second.get<std::string>("dbname"), it->second.get<std::string>("dbuser"), it->second.get<std::string>("dbpwd"), err))
+			std::string dbuser = vm.count("dbuser")?vm["dbuser"].as<std::string>():it->second.get<std::string>("dbuser");
+			std::string dbpwd = vm.count("dbpwd")?vm["dbpwd"].as<std::string>():it->second.get<std::string>("dbpwd");
+			if (!dbuser.empty() && !dbpwd.empty())
+				if (!c.auth(vm.count("dbname")?vm["dbname"].as<std::string>():it->second.get<std::string>("dbname"), dbuser, dbpwd, err))
 				{
 					log(ll::ERROR, "Cannot auth with mongo server : %s", err.c_str());
 					retcode = 1;
 					goto cleanup;
 				}
-			process_sync(config, it, c, synctype);
+			process_sync(config, vm, it, c, synctype);
 		}
 	}catch(std::exception &e){
 		log(ll::ERROR, "Got exception during import : %s", e.what());
