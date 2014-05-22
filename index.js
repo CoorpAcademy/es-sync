@@ -20,7 +20,7 @@ function es_sync(type, completion_handler, options)
 		if (options !== null)
 		{
 			for (var i in options) {
-				if (true) {
+				if (options.hasOwnProperty(i)) {
 					args.push(i, options[i]);
 				}
 			}
