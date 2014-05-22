@@ -41,6 +41,8 @@
 	<collections>
 		<users>
 			<field>displayName</field>
+			<field>provider</field>
+			<field>meta.createdAt</field>
 			<field>stats.lastConnection</field>
 			<field>coachDisciplines</field>
 		</users>
