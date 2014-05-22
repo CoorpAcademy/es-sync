@@ -21,7 +21,7 @@ function es_sync(type, completion_handler, options)
 		{
 			for (var i in options) {
 				if (options.hasOwnProperty(i)) {
-					args.push(i, options[i]);
+					args.push('--' + i, options[i]);
 				}
 			}
 		}
