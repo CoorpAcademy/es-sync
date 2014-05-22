@@ -1,38 +1,73 @@
-function sync_full(completion_handler, options)
-{
-	return es_sync('full', completion_handler, options);
+'use strict';
+
+var Q        = require('q');
+var path     = require('path');
+var execFile = require('child_process').execFile;
+
+/**
+ * Process index sync with the given mode (full|incremental).
+ *
+ * @param type
+ * @param options
+ * @returns {*}
+ */
+function esSync(type, options) {
+    var def = Q.defer();
+
+    options = options || {};
+
+    if (((process.platform !== 'linux') && (process.platform !== 'darwin')) || (process.arch !== 'x64')) {
+        var errorMessage = 'Unsupported platorm/arch ' + process.platform + '/' + process.arch;
+        def.reject(new Error(errorMessage));
+    } else {
+        var confFilePath = path.join(__dirname, './config.xml');
+        if (options.confFile) {
+            confFilePath = options.confFile;
+        }
+
+        var args = ['--conf', confFilePath, '--type', type];
+        if (options.args) {
+            for (var arg in options.args) {
+                if (options.args.hasOwnProperty(arg)) {
+                    args.push('--' + arg, options.args[arg]);
+                }
+            }
+        }
+
+        var exeName = 'coorp_es_sync_' + process.platform + '_' + process.arch;
+        var exePath = path.join(__dirname, './' + exeName);
+
+        execFile(exePath, args, { maxBuffer: 1024*1024 }, function (err, stdout) {
+            if (err) {
+                def.reject(stdout);
+            } else {
+                def.resolve(stdout);
+            }
+        });
+    }
+
+    return def.promise;
 }
 
-function sync_incremental(completion_handler, options)
-{
-	return es_sync('incremental', completion_handler, options);
+/**
+ * Process full index sync.
+ *
+ * @param options
+ * @returns {*}
+ */
+function syncFull(options) {
+    return esSync('full', options);
 }
 
-function es_sync(type, completion_handler, options)
-{
-	if (((process.platform == 'linux') || (process.platform == 'darwin')) && (process.arch == 'x64'))
-	{
-		var path = require('path');
-		var exeName = 'coorp_es_sync_' + process.platform + '_' + process.arch;
-		var exePath = path.join(__dirname, './' + exeName);
-		var confPath = path.join(__dirname, './config.xml');
-		var args = ['--conf', confPath, '--type', type];
-		if (options !== null)
-		{
-			for (var i in options) {
-				if (options.hasOwnProperty(i)) {
-					args.push('--' + i, options[i]);
-				}
-			}
-		}
-		sync_process = require('child_process').execFile(exePath, args,
-				{ maxBuffer: 1024*1024 }, completion_handler);
-		return true;
-	}else{
-		console.log('Unsupported platorm/arch ' + process.platform + '/' + process.arch);
-		return false;
-	}
+/**
+ * Process incremental index sync.
+ *
+ * @param options
+ * @returns {*}
+ */
+function syncIncremental(options) {
+    return esSync('incremental', options);
 }
 
-exports.sync_full = sync_full;
-exports.sync_incremental = sync_incremental;
+exports.sync_full        = syncFull;
+exports.sync_incremental = syncIncremental;

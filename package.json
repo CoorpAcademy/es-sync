@@ -1,6 +1,9 @@
 {
   "name": "coorp-es-sync",
   "description": "Wrapper arround C++ app synchronising a mongodb to an elasticsearch",
-  "version": "0.1.4",
-  "private": true
+  "version": "0.1.5",
+  "private": true,
+  "dependencies": {
+    "q": "^1.0.1"
+  }
 }

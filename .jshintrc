@@ -1,0 +1,81 @@
+{
+    // Enable globals available when code is running inside of the NodeJS runtime environment
+    "node": true,
+    // Standard browser globals e.g. `window`, `document`
+    "browser": true,
+    // Allow ES.next specific features such as `const` and `let`
+    "esnext": true,
+    // Prohibit bitwise operators (&, |, ^, etc.)
+    "bitwise": false,
+    // Permit only camelcase for `var` and `object indexes`
+    "camelcase": false,
+    // Require {} for every new block or scope
+    "curly": false,
+    // Require triple equals i.e. `===`
+    "eqeqeq": true,
+    // Require immediate invocations to be wrapped in parens e.g. `( function(){}() );`
+    "immed": true,
+    // Prohibit variable use before definition
+    "latedef": true,
+    // Require capitalization of all constructor functions e.g. `new F()`
+    "newcap": true,
+    // Prohibit use of `arguments.caller` and `arguments.callee`
+    "noarg": true,
+    // Define quotes to string values
+    "quotmark": "single",
+    // Prohibit `.` and `[^...]` in regular expressions
+    "regexp": true,
+    // Require all non-global variables be declared before they are used
+    "undef": true,
+    // Warn unused variables
+    "unused": true,
+    // Require `use strict` pragma in every file
+    "strict": false,
+    // Prohibit trailing whitespaces
+    "trailing": true,
+    // Suppresses warnings about mixed tabs and spaces
+    "smarttabs": false,
+    // Globals variables
+    "globals": {
+        "angular": true,
+        "app": true,
+        "$": true,
+        "$f": true,
+        "requestAnimationFrame" : true,
+        "cancelAnimationFrame" : true,
+        "inject" : true,
+        "expect" : true,
+        "spyOn" : true,
+        "MockFactory" : true,
+        "UrlService" : true,
+        "alert" : true,
+        "_" : true,
+        "io" : true,
+        "Ladda" : true,
+        "Notify" : true,
+        "process" : true
+    },
+    // Extra globals
+    "predef": [
+        "define",
+        "require",
+        "exports",
+        "module",
+        "describe",
+        "before",
+        "beforeEach",
+        "after",
+        "afterEach",
+        "it"
+    ],
+    // Specify indentation spacing
+    "indent": 4,
+    // Max line length
+    "maxlen": 120,
+    // Allow development statements e.g. `console.log();`
+    "devel": false,
+    // Prohibit use of empty blocks
+    "noempty": true,
+    "-W018": true,
+    "-W101": true
+}
