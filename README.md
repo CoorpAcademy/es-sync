@@ -1,6 +1,8 @@
 es-sync
 =======
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/CoorpAcademy/es-sync.svg?token=eef4be83f1cd79ab83851cf14b70c105e63531c54c480c1ff32aa48f32ad4af5)](https://greenkeeper.io/)
+
 MongoDB to ElasticSearch binary
 
 Compiling
