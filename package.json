@@ -4,6 +4,6 @@
   "version": "0.1.5",
   "private": true,
   "dependencies": {
-    "q": "^1.0.1"
+    "q": "^1.5.0"
   }
 }
